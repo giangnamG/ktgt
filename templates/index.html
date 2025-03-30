@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegoKey - Dịch vụ VPS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background-color: #343a40;
+            /* Màu tối cho header */
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white !important;
+        }
+
+        .navbar-nav .nav-link {
+            color: black !important;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Khoảng cách giữa icon và chữ */
+        }
+
+        .navbar-nav .nav-link span {
+            display: inline-block;
+        }
+
+        .container {
+            max-width: 900px;
+            margin-top: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .vps-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .vps-card h4 {
+            color: #007bff;
+        }
+
+        .buy-btn {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 🔹 HEADER & NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-globe"></i> <span>StegoKey VPS</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            🏠 <span>Trang chủ</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            💻 <span>Dịch vụ VPS</span>
+                        </a>
+                    </li>
+
+                    {% if "user" in session %}
+                    <!-- Nếu đã đăng nhập, chỉ hiển thị Đăng xuất -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/profile/{{username}}">
+                            🔑 <span>Profile</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">
+                            🔑 <span>Đăng xuất</span>
+                        </a>
+                    </li>
+
+                    {% else %}
+                    <!-- Nếu chưa đăng nhập, chỉ hiển thị Đăng nhập -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            🔑 <span>Đăng nhập</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/register">
+                            🔑 <span>Đăng ký</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            🎧 <span>Hỗ trợ</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- 🔹 DANH SÁCH NHÀ CUNG CẤP VPS -->
+    <div class="container mt-4">
+        <h2 class="text-center text-primary">🌐 Danh sách dịch vụ VPS</h2>
+        <p class="text-center">Chọn nhà cung cấp VPS phù hợp với nhu cầu của bạn.</p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="vps-card">
+                    <h4>🚀 Vultr</h4>
+                    <p><strong>Giá:</strong> $5/tháng</p>
+                    <p><strong>Cấu hình:</strong> 1 CPU, 1GB RAM, 25GB SSD</p>
+                    <a href="https://www.vultr.com/" class="btn btn-primary buy-btn" target="_blank">Mua ngay</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="vps-card">
+                    <h4>☁️ Linode</h4>
+                    <p><strong>Giá:</strong> $5/tháng</p>
+                    <p><strong>Cấu hình:</strong> 1 CPU, 1GB RAM, 25GB SSD</p>
+                    <a href="https://www.linode.com/" class="btn btn-primary buy-btn" target="_blank">Mua ngay</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="vps-card">
+                    <h4>💻 DigitalOcean</h4>
+                    <p><strong>Giá:</strong> $6/tháng</p>
+                    <p><strong>Cấu hình:</strong> 1 CPU, 1GB RAM, 25GB SSD</p>
+                    <a href="https://www.digitalocean.com/" class="btn btn-primary buy-btn" target="_blank">Mua ngay</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="vps-card">
+                    <h4>🔥 Hetzner</h4>
+                    <p><strong>Giá:</strong> €4.5/tháng</p>
+                    <p><strong>Cấu hình:</strong> 2 CPU, 2GB RAM, 20GB SSD</p>
+                    <a href="https://www.hetzner.com/cloud" class="btn btn-primary buy-btn" target="_blank">Mua ngay</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="vps-card">
+                    <h4>⚡ OVH</h4>
+                    <p><strong>Giá:</strong> €5/tháng</p>
+                    <p><strong>Cấu hình:</strong> 1 CPU, 2GB RAM, 40GB SSD</p>
+                    <a href="https://www.ovhcloud.com/" class="btn btn-primary buy-btn" target="_blank">Mua ngay</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
