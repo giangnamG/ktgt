@@ -23,6 +23,7 @@ class User(db.Model):
     avatar = db.Column(db.String(120), nullable=True)
     is_active_backup = db.Column(db.Boolean, nullable=True)
     secret_key = db.Column(db.String(120), nullable=True)
+    cover_image_name = db.Column(db.String(120), nullable=True)
 
     def to_dict(self):
         return {

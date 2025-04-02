@@ -93,12 +93,13 @@ def register():
     return render_template("register.html")
 
 # Trang hồ sơ (BẢO VỆ KHỎI SSTI)
-@app.route("/profile/<username>")
-def profile(username):
+@app.route("/profile/")
+def profile():
     # if "user" not in session or session["user"] != username:
     #     flash("Bạn cần đăng nhập!", "danger")
     #     return redirect(url_for("login"))
 
+    username = request.args.get('user', 'Anonymous')
     user = User.query.filter_by(username=username).first()
     if not user:
         user = {}
@@ -134,7 +135,7 @@ def profile(username):
                 <p><strong>🎯 Sở thích:</strong> {", ".join(user.get('hobbies', []))}</p>
             </div>
             {backup_link}
-            <a href="{{ url_for('logout') }}" class="btn btn-danger logout-btn">🔓 Đăng xuất</a>
+            <a href="/logout" class="btn btn-danger logout-btn">🔓 Đăng xuất</a>
         </body>
         </html>
     """
@@ -156,9 +157,14 @@ def generate_secret_string(length=16):
 # Trang active backup tài khoản
 @app.route("/account/<username>/backup", methods=["GET", "POST"])
 def backup_account(username):
+    # Cập nhật tên ảnh đã chọn vào cơ sở dữ liệu của người dùng
+    user = User.query.filter_by(username=username).first()  # Lấy người dùng từ cơ sở dữ liệu
+    if not user:
+        return "User not found", 404
+    
     # 🖼️ Chọn ngẫu nhiên 1 ảnh trong folder
     random_image = get_random_image(COVER_IMAGE_FILEPATH)
-    print(random_image)
+    # print(random_image)
     # 🔑 Tạo chuỗi ngẫu nhiên 32 ký tự
     secret = generate_secret_string(32)
     
@@ -168,11 +174,89 @@ def backup_account(username):
         cover_image_name=random_image,
         stego_image_name=f'{username}.png'
     )
+    
+    user.secret_key = secret
+    user.cover_image_name = random_image  # Cập nhật cover_image_name
+    db.session.commit()  # Lưu thay đổi vào cơ sở dữ liệu
+    
     DCT.Encode()
       # ✅ Trả về ảnh đã giấu tin để người dùng tải về
-    return send_file(f'./{STEGO_IMAGE_FILEPATH}/{username}.png', as_attachment=True)
+    try:
+        return send_file(f'./{STEGO_IMAGE_FILEPATH}/{username}.png', as_attachment=True)
+    except FileNotFoundError:
+        return "Stego image not found", 404
 
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+UPLOAD_FOLDER = "tmp/"
+
+
+# Kiểm tra loại tệp có hợp lệ không
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route("/account/activate", methods=["GET", "POST"])
+def activate():
+    if request.method == 'GET':
+        # Trả về trang HTML cho phép tải lên tệp
+        return render_template("uploadBackUpImage.html")  # Giả sử bạn có template upload.html
+
+    elif request.method == 'POST':
+        # Nhận username từ form
+        username = request.form.get('username')
+        # Tìm người dùng trong cơ sở dữ liệu
+        user = User.query.filter_by(username=username).first()  # Tìm người dùng theo username
+        if not user:
+            return 'User not found', 404  # Nếu không tìm thấy người dùng, trả về lỗi
+        
+        # Lấy đường dẫn cover_image_name của người dùng
+        cover_image_path = user.cover_image_name
+        if not cover_image_path:
+            return 'Cover image not found', 404  # Nếu không có ảnh cover, trả về lỗi
+        
+        
+        # Kiểm tra nếu có tệp được gửi
+        if 'file' not in request.files:
+            return 'No file part'
+        file = request.files['file']
+
+        # Nếu tệp không được chọn, trả về thông báo
+        if file.filename == '':
+            return 'No selected file'
+
+        # Kiểm tra tệp có hợp lệ không
+        if file and allowed_file(file.filename):
+            # Tạo tên tệp mới để lưu trữ
+            filename = os.path.join(UPLOAD_FOLDER, file.filename)
+            # Lưu tệp vào thư mục đã cấu hình
+            file.save(filename)
+        # DCT Decrypt to check secret_key
+            secret_key = user.to_dict().get('secret_key',None)
+            cover_image_name = user.to_dict().get('cover_image_name',None)
+            if secret_key is None:
+                return "Account is blocked !!!", 403
+            
+            if cover_image_name is None:
+                return "This Account may not activated `backup` function"
+            
+            DCT = DCTApp(
+                message=None,
+                cover_image_name=random_image,
+                stego_image_name=filename
+            )
+            secret_key_decoded = DCT.Decode()
+            print(secret_key_decoded)
+            if secret_key_decoded == secret_key:
+                return """
+                        <script>alert("Activate Success!!! Your old password is: <b>{}<b/>"); window.location="/login"</script>
+                    """.format(user.to_dict().get('password','')), 200
+            else:
+                return """
+                    <script>alert("Your Secret Image Seem To Be Not Matched")</script>
+                    """, 403
+        else:
+            return 'Invalid file type. Only PNG, JPG, JPEG, GIF allowed.'
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
