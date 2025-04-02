@@ -3,25 +3,38 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StegoKey - Đăng nhập</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 
-<body class="container mt-5">
-    <h2>🔑 Đăng nhập</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-    <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-    {% endwith %}
-    <form method="POST">
-        <label>Username:</label>
-        <input type="text" name="username" required class="form-control">
-        <label>Password:</label>
-        <input type="password" name="password" required class="form-control">
-        <button type="submit" class="btn btn-primary mt-4 mb-4">Đăng nhập</button>
-    </form>
-    <a href="/activate-account" class="btn btn-danger">Bạn đã đánh mất tài khoản ?</a>
+<body class="bg-light">
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="card shadow-lg p-4 w-50">
+            <h2 class="text-center text-primary mb-4">🔑 Đăng nhập</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endwith %}
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Tên người dùng:</label>
+                    <input type="text" id="username" name="username" required class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Mật khẩu:</label>
+                    <input type="password" id="password" name="password" required class="form-control">
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Đăng nhập</button>
+                </div>
+            </form>
+            <div class="text-center mt-3">
+                <a href="/activate-account" class="text-decoration-none text-danger">Bạn đã đánh mất tài khoản?</a>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
