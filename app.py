@@ -2,10 +2,18 @@ from flask import Flask, request, render_template_string, render_template, send_
 import os, random, string
 import cv2
 import numpy as np
-from user_data import USER_DATA
 from crypto import *
+from db import *
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()  # Tạo bảng trong cơ sở dữ liệu
+    migrate(db)
+
 app.secret_key = "super_secret_key"
 
 # Thư mục lưu avatar
@@ -29,9 +37,12 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        if username in USER_DATA and USER_DATA[username]["password"] == password:
+        # Truy vấn cơ sở dữ liệu để kiểm tra username
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.password == password:  # So sánh mật khẩu
             session["user"] = username
-            # flash("✅ Đăng nhập thành công!", "success")
+            flash("✅ Đăng nhập thành công!", "success")
             return redirect(url_for("index"))
         else:
             flash("❌ Sai username hoặc password!", "danger")
@@ -45,7 +56,7 @@ def logout():
     flash("🚪 Đã đăng xuất!", "info")
     return redirect(url_for("login"))
 
-# Trang đăng ký
+# Route đăng ký
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -58,20 +69,24 @@ def register():
         dob = request.form.get("dob")
         hobbies = request.form.get("hobbies").split(',')
 
-        if username in USER_DATA:
+        # Kiểm tra xem username đã tồn tại chưa
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
             flash("❌ Tên người dùng đã tồn tại!", "danger")
         else:
-            USER_DATA[username] = {
-                "password": password,
-                "email": email,
-                "phone": phone,
-                "address": address,
-                "job": job,
-                "dob": dob,
-                "hobbies": hobbies,
-                "avatar": "default.png",  # Đặt avatar mặc định
-                "secret_key": "default_key"  # Đặt secret key mặc định
-            }
+            # Thêm người dùng vào cơ sở dữ liệu
+            new_user = User(
+                username=username,
+                password=password,
+                email=email,
+                phone=phone,
+                address=address,
+                job=job,
+                dob=datetime.strptime(dob, "%Y-%m-%d").date() if dob else None,
+                hobbies=','.join(hobbies)  # Lưu hobbies dưới dạng chuỗi
+            )
+            db.session.add(new_user)
+            db.session.commit()
             flash("✅ Đăng ký thành công! Vui lòng đăng nhập.", "success")
             return redirect(url_for("login"))
 
@@ -80,15 +95,26 @@ def register():
 # Trang hồ sơ (BẢO VỆ KHỎI SSTI)
 @app.route("/profile/<username>")
 def profile(username):
-    if "user" not in session or username not in session['user']:
-        flash("Bạn cần đăng nhập!", "danger")
-        return redirect(url_for("login"))
+    # if "user" not in session or session["user"] != username:
+    #     flash("Bạn cần đăng nhập!", "danger")
+    #     return redirect(url_for("login"))
 
-    user = USER_DATA.get(username, {})
-   
-    # 🔥 LỖI: `username` được truyền trực tiếp vào template!
-    return render_template_string(
-        f"""
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        user = {}
+        flash("Người dùng không tồn tại!", "danger")
+        # return redirect(url_for("index"))
+    else:
+        user = user.to_dict()
+
+    # Safely construct the HTML template
+    backup_link = (
+        f"""<a href="/account/{username}/backup" class="btn btn-success">Tạo Khóa backup</a>"""
+        if not user.get("is_active_backup", False)
+        else ""
+    )
+
+    html_template = f"""
         <!DOCTYPE html>
         <html lang="vi">
         <head>
@@ -98,24 +124,21 @@ def profile(username):
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
         </head>
         <body class="container mt-5">
-            <h2 class="text-center text-primary">👤 Hồ sơ của { username }</h2>
+            <h2 class="text-center text-primary">👤 Hồ sơ của {username}</h2>
             <div class="profile-info">
-                <p><strong>📧 Email:</strong> { user.get('email', '') }</p>
-                <p><strong>📞 Số điện thoại:</strong> { user.get('phone','') }</p>
-                <p><strong>🏠 Địa chỉ:</strong> { user.get('address','') }</p>
-                <p><strong>💼 Nghề nghiệp:</strong> { user.get('job', '') }</p>
-                <p><strong>🎂 Ngày sinh:</strong> { user.get('dob','') }</p>
-                <p><strong>🎯 Sở thích:</strong> { ", ".join(user.get('hobbies',[])) }</p>
+                <p><strong>📧 Email:</strong> {user.get('email', '')}</p>
+                <p><strong>📞 Số điện thoại:</strong> {user.get('phone', '')}</p>
+                <p><strong>🏠 Địa chỉ:</strong> {user.get('address', '')}</p>
+                <p><strong>💼 Nghề nghiệp:</strong> {user.get('job', '')}</p>
+                <p><strong>🎂 Ngày sinh:</strong> {user.get('dob', '')}</p>
+                <p><strong>🎯 Sở thích:</strong> {", ".join(user.get('hobbies', []))}</p>
             </div>
-            """ + 
-            """<a href="/account/{username}/backup" class="btn btn-success">Tạo Khóa backup</a>""" if USER_DATA[username]['is_active_backup'] == False else ''
-            """
+            {backup_link}
             <a href="{{ url_for('logout') }}" class="btn btn-danger logout-btn">🔓 Đăng xuất</a>
         </body>
         </html>
-        """,
-        username=username,  # 🛑 Đây chính là điểm gây lỗi SSTI
-    )
+    """
+    return render_template_string(html_template)
 
 def get_random_image(folder_path):
     # Lấy danh sách file trong folder
