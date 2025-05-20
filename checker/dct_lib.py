@@ -10,7 +10,7 @@ PORT = 8000
 class DCTLib:
     @property
     def host(self):
-        return f'http://{self.host}:{self.port}/api'
+        return f'http://{self.host}:{self.port}'
 
     def __init__(self, checker: BaseChecker, port=PORT, host=None):
         self.c = checker

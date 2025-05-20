@@ -11,5 +11,6 @@ USER_DATA = {
         "hobbies": ",".join(["Đọc sách", "Lập trình", "Chơi CTF", "<b style=color=red>Hacking</b>"]),
         "is_active_backup": True,
         "secret_key": "FLAG{SV9MMWszX0RDVF9TdDNnb18=}",
+        "cover_image_name": "1002.jpg"
     },
 }

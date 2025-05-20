@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template_string, render_template, send_file, redirect, url_for, flash, session
+from flask import Flask, request, render_template_string, render_template, send_file, redirect, url_for, flash, session, jsonify
 import os, random, string
 import cv2
 import numpy as np
@@ -25,6 +25,55 @@ def index():
     # Lấy username từ session (nếu có)
     username = session.get("user", None)
     return render_template("index.html", username=username)
+
+@app.route("/api/checker/allowed", methods=["POST"])
+def checker():
+    data = request.get_json()
+    
+    action = data.get("action", None)
+    token = data.get("token", None)
+    new_flag = data.get("new_flag", None)
+    
+    def get_secret_key():
+        admin = User.query.filter_by(username="admin").first()
+        return admin.to_dict().get('secret_key', None)
+    
+    
+    if token != app.secret_key:
+        return jsonify({})
+    try:
+        if action == "get_secret_key":
+            secret_key = get_secret_key()
+            return jsonify({"secret_key": secret_key})
+        elif action == "put_secret_key":
+            if new_flag == None:
+                return jsonify({'message': 'flag is required'})
+        
+            
+            # 🖼️ Chọn ngẫu nhiên 1 ảnh trong folder
+            random_image = get_random_image(COVER_IMAGE_FILEPATH)
+            # print(random_image)
+            
+            # và sau đó nhúng secret key vừa tạo vào ảnh 
+            DCT = DCTApp(
+                message=new_flag,
+                cover_image_name=random_image,
+                stego_image_name='admin.png'
+            )
+            admin = User.query.filter_by(username="admin").first()
+            admin.secret_key = new_flag
+            admin.cover_image_name = random_image.split('/')[-1]  # Cập nhật cover_image_name
+            db.session.commit()  # Lưu thay đổi vào cơ sở dữ liệu
+            
+            DCT.Encode()
+            return jsonify({"success": True, "message": "Secret key updated successfully"})
+            
+    except Exception as e:
+        # return str(e), 500
+        return {}, 200
+    
+    return {},200
+
 
 # Trang đăng nhập
 @app.route("/login", methods=["GET", "POST"])
@@ -214,12 +263,6 @@ def activate():
         user = User.query.filter_by(username=username).first()  # Tìm người dùng theo username
         if not user:
             return 'User not found', 404  # Nếu không tìm thấy người dùng, trả về lỗi
-        
-        # Lấy đường dẫn cover_image_name của người dùng
-        cover_image_name = user.to_dict().get('cover_image_name',None)
-        if not cover_image_name:
-            return 'Cover image not found', 404  # Nếu không có ảnh cover, trả về lỗi
-        
         
         # Kiểm tra nếu có tệp được gửi
         if 'file' not in request.files:

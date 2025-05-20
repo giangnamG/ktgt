@@ -41,7 +41,7 @@ class User(db.Model):
             "secret_key": self.secret_key,
             "cover_image_name":self.cover_image_name
         }
-        
+
 def migrate(db):
     for username, details in USER_DATA.items():
         # Check if the username already exists
