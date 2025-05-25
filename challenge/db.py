@@ -41,7 +41,17 @@ class User(db.Model):
             "secret_key": self.secret_key,
             "cover_image_name":self.cover_image_name
         }
-
+class Flag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    flag = db.Column(db.String(32), nullable=False, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "flag": self.flag
+        }
+    
 def migrate(db):
     for username, details in USER_DATA.items():
         # Check if the username already exists

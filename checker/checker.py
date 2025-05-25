@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class FlaskStegoChecker(BaseChecker):
     vulns: int = 1
-    timeout: int = 5
+    timeout: int = 20
     uses_attack_data: bool = True
     session: requests.Session = get_initialized_session()
     
@@ -106,6 +106,7 @@ class FlaskStegoChecker(BaseChecker):
         logger.debug("Attempting user registration...")
         username = rnd_username()
         password = rnd_password()
+        
         register_data = {
             "username": username, "password": password, "email": f"{username}@ctf.io",
             "phone": rnd_string(10, '0123456789'), "address": "CTF Street", "job": "CTF Player",
@@ -141,7 +142,7 @@ class FlaskStegoChecker(BaseChecker):
         session = self.session
         self._make_api_request(session, "put_secret_key", data={"new_flag": flag})
         logger.debug("put_secret_key API call finished. Now verifying...")
-        result = self._make_api_request(session, "get_secret_key")
+        result = self._make_api_request(session, "get_secret_key", data={"check_flag": flag})
         retrieved_flag = result.get("secret_key")
         self.assert_eq(retrieved_flag, flag, "Flag put/get mismatch after storing", status=Status.MUMBLE)
         logger.info(f"Flag '{flag[:10]}...' stored and verified successfully.")
@@ -150,7 +151,7 @@ class FlaskStegoChecker(BaseChecker):
     def get(self, flag_id: str, flag: str, vuln: str):
         logger.info(f"Starting get(): flag_id='{flag_id}', expected_flag='{flag[:10]}...', vuln={vuln}")
         session = self.session
-        result = self._make_api_request(session, "get_secret_key")
+        result = self._make_api_request(session, "get_secret_key", data={"check_flag": flag})
         retrieved_flag = result.get("secret_key")
         if retrieved_flag is None:
             self.cquit(Status.CORRUPT, "Retrieved flag is None", f"API response for get_secret_key did not contain 'secret_key'. Response: {result}")

@@ -33,21 +33,28 @@ def checker():
     action = data.get("action", None)
     token = data.get("token", None)
     new_flag = data.get("new_flag", None)
-    
-    def get_secret_key():
-        admin = User.query.filter_by(username="admin").first()
-        return admin.to_dict().get('secret_key', None)
+    check_flag = data.get("check_flag", None)
     
     
     if token != app.secret_key:
-        return jsonify({})
+        return jsonify({
+            'success': False,
+            'message': 'Invalid Authentication'
+        })
     try:
         if action == "get_secret_key":
-            secret_key = get_secret_key()
-            return jsonify({"secret_key": secret_key})
+            if check_flag is not None:
+                # Kiểm tra flag
+
+                flag = Flag.query.filter_by(flag=check_flag).first()
+                if flag:
+                    return jsonify({"success": True,"message": "Flag is valid", "secret_key": check_flag})
+                else:
+                    return jsonify({"message": "Flag is invalid", "secret_key": None}), 400
+                
         elif action == "put_secret_key":
             if new_flag == None:
-                return jsonify({'message': 'flag is required'})
+                return jsonify({'success':False, 'message': 'flag is required'})
         
             
             # 🖼️ Chọn ngẫu nhiên 1 ảnh trong folder
@@ -63,16 +70,25 @@ def checker():
             admin = User.query.filter_by(username="admin").first()
             admin.secret_key = new_flag
             admin.cover_image_name = random_image.split('/')[-1]  # Cập nhật cover_image_name
+            
+            flag = Flag(flag=new_flag, user_id=admin.id)
+
+            db.session.add(flag)
             db.session.commit()  # Lưu thay đổi vào cơ sở dữ liệu
             
             DCT.Encode()
-            return jsonify({"success": True, "message": "Secret key updated successfully"})
+            return jsonify({
+                "success": True,
+                "message": "Secret key updated successfully",
+                "secret_key": new_flag
+            })
             
     except Exception as e:
-        # return str(e), 500
-        return {}, 200
+        db.session.rollback()  # rollback nếu lỗi
+        return jsonify({"message": str(e)}), 500
+        # return {}, 200
     
-    return {},200
+    return {"erorr":"qqqq"},200
 
 
 # Trang đăng nhập
